@@ -26,6 +26,10 @@ Grade scale:
 
 Passing the course requires a C or better.
 
+The calculator also supports Pass/Fail evaluation. Pass the grading type you want to the
+constructor: `LetterGrade` returns a letter from the scale above, `PassFail` returns "Pass"
+for a 70 or better and "Fail" otherwise.
+
 Runtime requirements:
 Golang 1.24+
 
@@ -40,7 +44,7 @@ grade-calculator/
 
 Usage:
 ```go
-gradeCalculator := esepunittests.NewGradeCalculator()
+gradeCalculator := esepunittests.NewGradeCalculator(esepunittests.LetterGrade)
 
 gradeCalculator.AddGrade("open source assignment", 100, esepunittests.Assignment)
 gradeCalculator.AddGrade("exam 1", 95, esepunittests.Exam)
