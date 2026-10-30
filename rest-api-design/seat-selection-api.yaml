@@ -1,0 +1,171 @@
+openapi: 3.0.0
+info:
+  title: Movie Theater Seat Selection API
+  description: This API is used by the movie theater website and mobile app when a customer is picking their seats for a showtime. A customer can see which seats are open for a showtime, hold the seats they want while they finish checking out, look up their reservation, and cancel the reservation if they change their mind before paying. Seats that are being held can not be picked by other customers until the hold expires or the reservation is cancelled.
+  version: 1.0.0
+servers:
+  - url: https://api.example.com/v1
+paths:
+  /showtimes/{showtimeId}/seats:
+    get:
+      summary: Get the seats for a showtime
+      description: Returns every seat in the auditorium for the showtime and whether it is available, held, or sold.
+      parameters:
+        - name: showtimeId
+          in: path
+          required: true
+          description: The id of the showtime
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          description: Only return seats that have this status
+          schema:
+            type: string
+            enum: [available, held, sold]
+      responses:
+        '200':
+          description: A list of the seats for the showtime
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  showtimeId:
+                    type: string
+                    example: st1024
+                  auditorium:
+                    type: string
+                    example: Theater 5
+                  seats:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Seat'
+        '400':
+          description: The status value is not valid
+        '404':
+          description: Showtime not found
+  /reservations:
+    post:
+      summary: Reserve seats for a showtime
+      description: Puts a hold on the seats the customer picked so nobody else can take them while the customer pays. The hold lasts 10 minutes.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - showtimeId
+                - tickets
+              properties:
+                showtimeId:
+                  type: string
+                  example: st1024
+                tickets:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      seatId:
+                        type: string
+                        example: F7
+                      ticketType:
+                        type: string
+                        enum: [adult, child, senior]
+                email:
+                  type: string
+                  example: customer@email.com
+      responses:
+        '201':
+          description: The seats were reserved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+        '400':
+          description: The request is missing the showtime or has no seats
+        '404':
+          description: Showtime not found
+        '409':
+          description: One or more of the seats are already held or sold
+  /reservations/{reservationId}:
+    get:
+      summary: Get a reservation
+      parameters:
+        - name: reservationId
+          in: path
+          required: true
+          description: The id of the reservation
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The reservation was found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+        '404':
+          description: Reservation not found
+    delete:
+      summary: Cancel a reservation
+      description: Cancels the reservation and makes the seats available again for other customers.
+      parameters:
+        - name: reservationId
+          in: path
+          required: true
+          description: The id of the reservation to cancel
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The reservation was cancelled and the seats were released
+        '404':
+          description: Reservation not found
+        '409':
+          description: The reservation was already paid for so it can not be cancelled
+components:
+  schemas:
+    Seat:
+      type: object
+      properties:
+        seatId:
+          type: string
+          example: F7
+        row:
+          type: string
+          example: F
+        number:
+          type: integer
+          example: 7
+        seatType:
+          type: string
+          enum: [standard, wheelchair, recliner]
+        status:
+          type: string
+          enum: [available, held, sold]
+    Reservation:
+      type: object
+      properties:
+        reservationId:
+          type: string
+          example: r5531
+        showtimeId:
+          type: string
+          example: st1024
+        seats:
+          type: array
+          items:
+            type: string
+          example: [F7, F8]
+        totalPrice:
+          type: number
+          example: 25.98
+        status:
+          type: string
+          enum: [held, paid, cancelled]
+        holdExpiresAt:
+          type: string
+          format: date-time
